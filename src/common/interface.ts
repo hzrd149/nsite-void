@@ -1,5 +1,6 @@
 import type { Observable } from "rxjs";
 import type { AppConfig } from "./types";
+import type { CoreMessage } from "ai";
 
 // Base RPC message types
 export type RPCMessageCall<T extends unknown = any> = {
@@ -51,7 +52,11 @@ export type RPCHandler<
   TResult extends unknown = any,
 > = (
   payload: TPayload,
-) => Observable<TResult> | Promise<TResult> | Promise<Observable<TResult>> | TResult;
+) =>
+  | Observable<TResult>
+  | Promise<TResult>
+  | Promise<Observable<TResult>>
+  | TResult;
 
 // Registry for RPC handlers
 export type RPCHandlerRegistry<Commands extends RPCCommandDirectory = {}> = {
@@ -98,6 +103,20 @@ export interface ClientWorkerCommands extends RPCCommandDirectory {
     result: { files: string[] };
   };
   "file.clear": {
+    payload: void;
+    result: void;
+  };
+
+  // Chat operations
+  "chat.message": {
+    payload: string;
+    result: void;
+  };
+  "chat.messages": {
+    payload: void;
+    result: CoreMessage[];
+  };
+  "chat.reset": {
     payload: void;
     result: void;
   };

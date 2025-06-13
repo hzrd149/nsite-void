@@ -1,11 +1,12 @@
 /// <reference lib="webworker" />
 
+import debug from "debug";
 import mime from "mime";
+import { logger } from "../common/logger";
 import { customFiles } from "./modules/file-operations";
 import { rpcServer } from "./rpc-server";
 
-import debug from "debug";
-import { logger } from "../common/logger";
+import "./modules/chat";
 import "./modules/config";
 import "./modules/file-operations";
 

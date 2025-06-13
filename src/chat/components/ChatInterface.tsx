@@ -1,132 +1,36 @@
+import type {
+  CoreAssistantMessage,
+  CoreSystemMessage,
+  CoreToolMessage,
+  CoreUserMessage,
+} from "ai";
+import { lastValueFrom } from "rxjs";
 import { createSignal, For, from } from "solid-js";
-import { rpc } from "../services/rpc-client";
+import { config$, messages$, rpcClient } from "../services/rpc";
+import { MessagesIcon, SendIcon, SettingsIcon, UserIcon } from "./Icons";
 
 interface ChatInterfaceProps {
   onSettings: () => void;
 }
 
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-}
-
 export default function ChatInterface(props: ChatInterfaceProps) {
-  const config = from(rpc.getConfig());
-  const [messages, setMessages] = createSignal<Message[]>([]);
+  const config = from(config$);
+  const messages = from(messages$);
   const [input, setInput] = createSignal("");
   const [isLoading, setIsLoading] = createSignal(false);
 
   const hasApiConfig = () => !!config()?.apiUrl && !!config()?.apiKey;
 
-  const generateId = () =>
-    Math.random().toString(36).substring(2) + Date.now().toString(36);
-
   const sendMessage = async (content: string) => {
-    if (!content.trim() || !hasApiConfig() || isLoading()) return;
+    if (!content.trim() || isLoading()) return;
 
-    const userMessage: Message = {
-      id: generateId(),
-      role: "user",
-      content: content.trim(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${config()?.apiUrl}/chat/completions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${config()?.apiKey}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-3.5-turbo",
-          messages: [...messages(), userMessage].map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
-          stream: true,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(
-          `API request failed: ${response.status} ${response.statusText}`,
-        );
-      }
-
-      const assistantMessage: Message = {
-        id: generateId(),
-        role: "assistant",
-        content: "",
-      };
-
-      setMessages((prev) => [...prev, assistantMessage]);
-
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-
-      if (reader) {
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            const chunk = decoder.decode(value);
-            const lines = chunk.split("\n");
-
-            for (const line of lines) {
-              if (line.startsWith("data: ")) {
-                const data = line.slice(6);
-                if (data === "[DONE]") break;
-
-                try {
-                  const parsed = JSON.parse(data);
-                  const delta = parsed.choices?.[0]?.delta?.content;
-                  if (delta) {
-                    setMessages((prev) =>
-                      prev.map((m) =>
-                        m.id === assistantMessage.id
-                          ? { ...m, content: m.content + delta }
-                          : m,
-                      ),
-                    );
-                  }
-                } catch (e) {
-                  // Skip invalid JSON lines
-                }
-              }
-            }
-          }
-        } finally {
-          reader.releaseLock();
-        }
-      }
+      await lastValueFrom(rpcClient.call("chat.message", content.trim()));
     } catch (error) {
       console.error("Chat error:", error);
-      // Add error message to the assistant message if it was created
-      setMessages((prev) => {
-        const lastMessage = prev[prev.length - 1];
-        if (
-          lastMessage &&
-          lastMessage.role === "assistant" &&
-          lastMessage.content === ""
-        ) {
-          return prev.map((m) =>
-            m.id === lastMessage.id
-              ? {
-                  ...m,
-                  content:
-                    "Sorry, I encountered an error. Please check your API configuration and try again.",
-                }
-              : m,
-          );
-        }
-        return prev;
-      });
     } finally {
       setIsLoading(false);
     }
@@ -146,25 +50,7 @@ export default function ChatInterface(props: ChatInterfaceProps) {
           class="btn btn-ghost btn-sm btn-circle"
           onClick={props.onSettings}
         >
-          <svg
-            class="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-            />
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-            />
-          </svg>
+          <SettingsIcon />
         </button>
       </div>
 
@@ -197,21 +83,9 @@ export default function ChatInterface(props: ChatInterfaceProps) {
               Configure API
             </button>
           </div>
-        ) : messages().length === 0 ? (
+        ) : messages()?.length === 0 ? (
           <div class="text-center py-8 text-base-content/60">
-            <svg
-              class="w-16 h-16 mx-auto mb-4 text-base-content/40"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-              />
-            </svg>
+            <MessagesIcon class="mx-auto mb-4 size-16" />
             <p class="text-lg">Start a conversation</p>
             <p class="text-sm">
               Type a message below to begin chatting with AI
@@ -219,57 +93,20 @@ export default function ChatInterface(props: ChatInterfaceProps) {
           </div>
         ) : (
           <For each={messages()}>
-            {(message) => (
-              <div
-                class={`chat ${message.role === "user" ? "chat-end" : "chat-start"}`}
-              >
-                <div class="chat-image avatar">
-                  <div class="w-10 rounded-full">
-                    {message.role === "user" ? (
-                      <div class="bg-primary text-primary-content w-10 h-10 rounded-full flex items-center justify-center">
-                        <svg
-                          class="w-6 h-6"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                          />
-                        </svg>
-                      </div>
-                    ) : (
-                      <div class="bg-secondary text-secondary-content w-10 h-10 rounded-full flex items-center justify-center">
-                        <svg
-                          class="w-6 h-6"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                          />
-                        </svg>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div class="chat-header">
-                  {message.role === "user" ? "You" : "AI Assistant"}
-                </div>
-                <div
-                  class={`chat-bubble ${message.role === "user" ? "chat-bubble-primary" : "chat-bubble-secondary"}`}
-                >
-                  {message.content}
-                </div>
-              </div>
-            )}
+            {(message) => {
+              switch (message.role) {
+                case "system":
+                  return <ChatSystemMessage message={message} />;
+                case "user":
+                  return <ChatUserMessage message={message} />;
+                case "assistant":
+                  return <ChatAssistantMessage message={message} />;
+                case "tool":
+                  return <ChatToolMessage message={message} />;
+                default:
+                  return null;
+              }
+            }}
           </For>
         )}
 
@@ -308,22 +145,97 @@ export default function ChatInterface(props: ChatInterfaceProps) {
             class="btn btn-primary"
             disabled={!hasApiConfig() || isLoading() || !input().trim()}
           >
-            <svg
-              class="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-              />
-            </svg>
+            <SendIcon />
           </button>
         </form>
       </div>
     </div>
   );
+}
+
+function ChatSystemMessage({ message }: { message: CoreSystemMessage }) {
+  return (
+    <div class="chat chat-center">
+      <div class="chat-header font-semibold text-xs text-base-content/60">
+        System
+      </div>
+      <div class="chat-bubble whitespace-pre-wrap bg-base-200 text-base-content/70">
+        {message.content}
+      </div>
+    </div>
+  );
+}
+
+function ChatUserMessage({ message }: { message: CoreUserMessage }) {
+  return (
+    <div class="chat chat-end">
+      <div class="chat-image avatar">
+        <div class="bg-primary text-primary-content w-10 h-10 rounded-full flex items-center justify-center">
+          <UserIcon />
+        </div>
+      </div>
+      <div class="chat-header">You</div>
+      <div class="chat-bubble whitespace-pre-wrap chat-bubble-primary">
+        {renderUserContent(message.content)}
+      </div>
+    </div>
+  );
+}
+
+function ChatAssistantMessage({ message }: { message: CoreAssistantMessage }) {
+  return (
+    <div class="chat chat-start">
+      <div class="chat-image avatar">
+        <div class="bg-secondary text-secondary-content w-10 h-10 rounded-full flex items-center justify-center">
+          <svg
+            class="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+            />
+          </svg>
+        </div>
+      </div>
+      <div class="chat-header">AI Assistant</div>
+      <div class="chat-bubble whitespace-pre-wrap chat-bubble-secondary">
+        {renderAssistantContent(message.content)}
+      </div>
+    </div>
+  );
+}
+
+function ChatToolMessage({ message }: { message: CoreToolMessage }) {
+  return (
+    <div class="chat chat-center">
+      <div class="chat-header font-semibold text-xs text-base-content/60">
+        Tool
+      </div>
+      <div class="chat-bubble whitespace-pre-wrap bg-base-300 text-base-content/80">
+        {renderToolContent(message.content)}
+      </div>
+    </div>
+  );
+}
+
+function renderUserContent(content: any) {
+  if (typeof content === "string") return content;
+  // TODO: handle array of TextPart | ImagePart | FilePart
+  return JSON.stringify(content);
+}
+
+function renderAssistantContent(content: any) {
+  if (typeof content === "string") return content;
+  // TODO: handle array of TextPart | FilePart | ReasoningPart | RedactedReasoningPart | ToolCallPart
+  return JSON.stringify(content);
+}
+
+function renderToolContent(content: any) {
+  // content is ToolContent (array of ToolResultPart)
+  return JSON.stringify(content);
 }

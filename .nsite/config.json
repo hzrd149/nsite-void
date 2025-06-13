@@ -1,0 +1,20 @@
+{
+  "relays": [
+    "wss://nos.lol",
+    "wss://relay.damus.io",
+    "wss://relay.primal.net"
+  ],
+  "servers": [
+    "https://cdn.hzrd149.com",
+    "https://nostr.download",
+    "https://cdn.sovbit.host"
+  ],
+  "profile": {
+    "name": "void",
+    "display_name": "void",
+    "about": "There is nothing here"
+  },
+  "publishProfile": true,
+  "publishRelayList": true,
+  "publishServerList": true
+}

@@ -1,0 +1,40 @@
+{
+  "name": "nsite-void",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && pnpm build:chat && pnpm build:sw",
+    "build:chat": "vite build",
+    "build:sw": "esbuild src/sw/index.ts --bundle --minify --sourcemap --outfile=dist/sw.js",
+    "watch": "pnpm build:chat --watch & pnpm build:sw --watch",
+    "preview": "vite preview",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "ai": "^4.3.16",
+    "applesauce-relay": "^2.0.0",
+    "debug": "^4.4.1",
+    "idb": "^8.0.3",
+    "mime": "^4.0.7",
+    "rollup-preset-solid": "^3.0.0",
+    "rxjs": "^7.8.2",
+    "solid-js": "^1.9.5",
+    "tailwindcss": "^4.1.10"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^28.0.3",
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^12.1.2",
+    "@tailwindcss/vite": "^4.1.10",
+    "@types/debug": "^4.1.12",
+    "daisyui": "^5.0.43",
+    "esbuild": "^0.25.5",
+    "prettier": "^3.5.3",
+    "rollup-plugin-postcss": "^4.0.2",
+    "typescript": "~5.8.3",
+    "vite": "^6.3.5",
+    "vite-plugin-solid": "^2.11.6"
+  }
+}

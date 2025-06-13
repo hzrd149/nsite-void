@@ -3,12 +3,10 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
     "build": "tsc -b && pnpm build:chat && pnpm build:sw",
     "build:chat": "vite build",
     "build:sw": "esbuild src/sw/index.ts --bundle --minify --sourcemap --outfile=dist/sw.js",
     "watch": "pnpm build:chat --watch & pnpm build:sw --watch",
-    "preview": "vite preview",
     "format": "prettier --write ."
   },
   "dependencies": {
@@ -26,6 +24,7 @@
     "zod": "^3.25.64"
   },
   "devDependencies": {
+    "deno": "^2.3.6",
     "@tailwindcss/vite": "^4.1.10",
     "@types/debug": "^4.1.12",
     "daisyui": "^5.0.43",

@@ -6,6 +6,8 @@ import { rpcServer } from "../rpc-server";
 const DEFAULT_CONFIG: AppConfig = {
   apiUrl: "https://api.openai.com/v1",
   apiKey: "",
+  model: "claude-sonnet-4",
+  maxSteps: 5,
 };
 
 export const config$ = new BehaviorSubject<AppConfig>(DEFAULT_CONFIG);
@@ -17,7 +19,7 @@ async function loadConfig() {
   const config = Object.fromEntries(
     fields.map((field) => [field.key, field.value]),
   );
-  config$.next(config as AppConfig);
+  config$.next({ ...DEFAULT_CONFIG, ...config });
 }
 loadConfig();
 

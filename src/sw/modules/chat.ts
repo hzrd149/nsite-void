@@ -1,8 +1,10 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateText, type CoreMessage } from "ai";
-import { BehaviorSubject, firstValueFrom, map } from "rxjs";
+import { BehaviorSubject, firstValueFrom, map, switchMap } from "rxjs";
+
 import { logger } from "../../common/logger";
 import { rpcServer } from "../rpc-server";
+import fsTools from "../tools/fs";
 import { config$ } from "./config";
 
 const log = logger.extend("chat");
@@ -15,7 +17,12 @@ const openai$ = config$.pipe(
     }),
   ),
 );
-const model$ = openai$.pipe(map((openai) => openai("gpt-4o-mini")));
+const model$ = config$.pipe(
+  map((cfg) =>
+    openai$.pipe(map((openai) => openai(cfg.model || "claude-sonnet-4"))),
+  ),
+  switchMap((x) => x),
+);
 
 const messages$ = new BehaviorSubject<CoreMessage[]>([]);
 
@@ -25,18 +32,21 @@ function resetConversation() {
 
 async function sendMessage(message: string) {
   const model = await firstValueFrom(model$);
+  const config = await firstValueFrom(config$);
 
   log("Sending message", message);
   messages$.next([...messages$.value, { role: "user", content: message }]);
 
-  const m = await generateText({
+  const result = await generateText({
     model,
     system: "You are a helpful assistant.",
+    tools: fsTools,
     messages: messages$.value,
+    maxSteps: config.maxSteps,
   });
 
-  // Add the message to the conversation
-  messages$.next([...messages$.value, { role: "assistant", content: m.text }]);
+  // Add all generated messages (including tool calls/results) to the conversation
+  messages$.next([...messages$.value, ...result.response.messages]);
 }
 
 // RPC methods

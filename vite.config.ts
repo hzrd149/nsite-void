@@ -29,5 +29,8 @@ export default defineConfig({
         },
       },
     },
+    watch: {
+      exclude: ["node_modules", "dist", "src/sw/**/*"],
+    },
   },
 });

@@ -11,17 +11,26 @@ export default function ChatSettings(props: ChatSettingsProps) {
 
   const [apiUrl, setApiUrl] = createSignal(config()?.apiUrl || "");
   const [apiKey, setApiKey] = createSignal(config()?.apiKey || "");
+  const [model, setModel] = createSignal(config()?.model || "claude-sonnet-4");
+  const [maxSteps, setMaxSteps] = createSignal(Number(config()?.maxSteps) || 5);
 
   // Update values when config changes
   createEffect(() => {
     setApiUrl(config()?.apiUrl || "");
     setApiKey(config()?.apiKey || "");
+    setModel(config()?.model || "claude-sonnet-4");
+    setMaxSteps(Number(config()?.maxSteps) || 5);
   });
 
   const [saved, setSaved] = createSignal(false);
   const handleSave = () => {
     rpcClient
-      .call("setConfig", { apiUrl: apiUrl(), apiKey: apiKey() })
+      .call("setConfig", {
+        apiUrl: apiUrl(),
+        apiKey: apiKey(),
+        model: model(),
+        maxSteps: maxSteps(),
+      })
       .subscribe({
         complete: () => {
           setSaved(true);
@@ -76,6 +85,58 @@ export default function ChatSettings(props: ChatSettingsProps) {
           <label class="label">
             <span class="label-text-alt">
               Your OpenAI API key (stored locally)
+            </span>
+          </label>
+        </div>
+
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-medium">Model</span>
+          </label>
+          <input
+            type="text"
+            placeholder="claude-sonnet-4"
+            class="input input-bordered w-full"
+            value={model()}
+            onInput={(e) => setModel(e.currentTarget.value)}
+          />
+          <label class="label">
+            <span class="label-text-alt">
+              The model to use for chat (e.g., gpt-3.5-turbo, claude-sonnet-4)
+            </span>
+          </label>
+        </div>
+
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-medium">Max Tool Steps</span>
+          </label>
+          <div class="flex items-center gap-3">
+            <input
+              type="range"
+              min="1"
+              max="10"
+              value={maxSteps()}
+              class="range range-primary flex-1"
+              onInput={(e) => setMaxSteps(Number(e.currentTarget.value))}
+            />
+            <input
+              type="number"
+              min="1"
+              max="10"
+              value={maxSteps()}
+              class="input input-bordered w-16 text-center"
+              onInput={(e) => {
+                let v = Number(e.currentTarget.value);
+                if (v < 1) v = 1;
+                if (v > 10) v = 10;
+                setMaxSteps(v);
+              }}
+            />
+          </div>
+          <label class="label">
+            <span class="label-text-alt">
+              Maximum number of tool steps the AI can take per message (1-10)
             </span>
           </label>
         </div>

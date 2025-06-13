@@ -1,7 +1,7 @@
 import { BehaviorSubject, of } from "rxjs";
-import type { AppConfig } from "../../common/types";
-import getDatabase from "../db";
-import { rpcServer } from "../rpc-server";
+import type { AppConfig } from "../common/types";
+import getDatabase from "./db";
+import { rpcServer } from "./rpc-server";
 
 const DEFAULT_CONFIG: AppConfig = {
   apiUrl: "https://api.openai.com/v1",

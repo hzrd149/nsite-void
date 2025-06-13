@@ -81,32 +81,6 @@ export interface ClientWorkerCommands extends RPCCommandDirectory {
     result: AppConfig;
   };
 
-  // File operations
-  "file.add": {
-    payload: { url: string; blob: Blob };
-    result: { url: string };
-  };
-  "file.addData": {
-    payload: {
-      url: string;
-      data: string | ArrayBuffer | Uint8Array;
-      mimeType?: string;
-    };
-    result: { url: string };
-  };
-  "file.remove": {
-    payload: { url: string };
-    result: { url: string };
-  };
-  "file.list": {
-    payload: void;
-    result: { files: string[] };
-  };
-  "file.clear": {
-    payload: void;
-    result: void;
-  };
-
   // Chat operations
   "chat.message": {
     payload: string;

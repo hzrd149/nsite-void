@@ -2,10 +2,11 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { generateText, type CoreMessage } from "ai";
 import { BehaviorSubject, firstValueFrom, map, switchMap } from "rxjs";
 
-import { logger } from "../../common/logger";
-import { rpcServer } from "../rpc-server";
-import fsTools from "../tools/fs";
+import { logger } from "../common/logger";
 import { config$ } from "./config";
+import { SYSTEM_PROMPT } from "./const";
+import { rpcServer } from "./rpc-server";
+import fsTools from "./tools";
 
 const log = logger.extend("chat");
 
@@ -39,7 +40,7 @@ async function sendMessage(message: string) {
 
   const result = await generateText({
     model,
-    system: "You are a helpful assistant.",
+    system: SYSTEM_PROMPT,
     tools: fsTools,
     messages: messages$.value,
     maxSteps: config.maxSteps,

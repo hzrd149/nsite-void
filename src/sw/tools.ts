@@ -1,10 +1,7 @@
-import FS from "@isomorphic-git/lightning-fs";
 import { tool, type ToolSet } from "ai";
 import z from "zod";
-import { logger } from "../../common/logger";
-
-const fs = new FS("fs");
-const pfs = fs.promises;
+import { logger } from "../common/logger";
+import pfs from "./fs";
 
 const log = logger.extend("fs");
 

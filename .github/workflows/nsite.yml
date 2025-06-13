@@ -25,17 +25,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
-          cache: npm
+          node-version: 22
+          cache: "pnpm"
 
-      - name: Install dependencies and build
-        run: |
-          npm install
-          npm run build
-          cp dist/index.html dist/404.html
+      - name: Install Dependencies
+        run: pnpm install
+
+      - name: Build
+        run: pnpm build
 
       - name: Install nsyte CLI
         run: deno install -A -f -g -n nsyte jsr:@nsyte/cli

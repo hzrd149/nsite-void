@@ -2,7 +2,8 @@
   "relays": [
     "wss://nos.lol",
     "wss://relay.damus.io",
-    "wss://relay.primal.net"
+    "wss://relay.primal.net",
+    "wss://relay.nsite.lol"
   ],
   "servers": [
     "https://cdn.hzrd149.com",

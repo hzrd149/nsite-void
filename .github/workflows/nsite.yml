@@ -48,4 +48,4 @@ jobs:
         run: deno install -A -f -g -n nsyte jsr:@nsyte/cli
 
       - name: Deploy to nsite
-        run: nsyte upload dist --privatekey ${{ secrets.NSITE_KEY }}
+        run: nsyte upload dist -i --privatekey ${{ secrets.NSITE_KEY }}

@@ -10,6 +10,23 @@ const pathSchema = z
   .describe("The absolute path to the file.")
   .transform((path) => (path.startsWith("/") ? path : `/${path}`));
 
+// Helper function to create consistent error responses
+const createErrorResponse = (
+  operation: string,
+  path: string,
+  error: unknown,
+) => {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  log(`${operation} failed for path ${path}:`, errorMessage);
+
+  return {
+    success: false,
+    error: `Failed to ${operation} '${path}': ${errorMessage}`,
+    operation,
+    path,
+  };
+};
+
 const readFile = tool({
   description:
     "Read a file from the virtual file system. Returns a string if encoding is 'utf8', otherwise a Uint8Array.",
@@ -18,8 +35,21 @@ const readFile = tool({
     encoding: z.enum(["utf8"]).optional(),
   }),
   execute: async ({ path, encoding }) => {
-    log("readFile", path, encoding);
-    return await pfs.readFile(path, encoding ? { encoding } : undefined);
+    try {
+      log("readFile", path, encoding);
+      const content = await pfs.readFile(
+        path,
+        encoding ? { encoding } : undefined,
+      );
+      return {
+        success: true,
+        content,
+        path,
+        encoding: encoding || "binary",
+      };
+    } catch (error) {
+      return createErrorResponse("read file", path, error);
+    }
   },
 });
 
@@ -32,15 +62,24 @@ const writeFile = tool({
     encoding: z.enum(["utf8"]).optional(),
   }),
   execute: async ({ path, data, encoding }) => {
-    log("writeFile", path, encoding);
-    const options: any = {};
-    if (encoding !== undefined) options.encoding = encoding;
-    await pfs.writeFile(
-      path,
-      data,
-      Object.keys(options).length ? options : undefined,
-    );
-    return { success: true };
+    try {
+      log("writeFile", path, encoding);
+      const options: any = {};
+      if (encoding !== undefined) options.encoding = encoding;
+      await pfs.writeFile(
+        path,
+        data,
+        Object.keys(options).length ? options : undefined,
+      );
+      return {
+        success: true,
+        path,
+        bytesWritten: data instanceof Uint8Array ? data.length : data.length,
+        encoding: encoding || "binary",
+      };
+    } catch (error) {
+      return createErrorResponse("write file", path, error);
+    }
   },
 });
 
@@ -50,9 +89,17 @@ const unlink = tool({
     path: pathSchema,
   }),
   execute: async ({ path }) => {
-    log("unlink", path);
-    await pfs.unlink(path);
-    return { success: true };
+    try {
+      log("unlink", path);
+      await pfs.unlink(path);
+      return {
+        success: true,
+        path,
+        message: `File '${path}' has been deleted successfully`,
+      };
+    } catch (error) {
+      return createErrorResponse("delete file", path, error);
+    }
   },
 });
 
@@ -62,8 +109,18 @@ const readdir = tool({
     path: pathSchema,
   }),
   execute: async ({ path }) => {
-    log("readdir", path);
-    return await pfs.readdir(path);
+    try {
+      log("readdir", path);
+      const entries = await pfs.readdir(path);
+      return {
+        success: true,
+        path,
+        entries,
+        count: entries.length,
+      };
+    } catch (error) {
+      return createErrorResponse("read directory", path, error);
+    }
   },
 });
 
@@ -73,9 +130,17 @@ const mkdir = tool({
     path: pathSchema,
   }),
   execute: async ({ path }) => {
-    log("mkdir", path);
-    await pfs.mkdir(path);
-    return { success: true };
+    try {
+      log("mkdir", path);
+      await pfs.mkdir(path);
+      return {
+        success: true,
+        path,
+        message: `Directory '${path}' has been created successfully`,
+      };
+    } catch (error) {
+      return createErrorResponse("create directory", path, error);
+    }
   },
 });
 
@@ -85,9 +150,17 @@ const rmdir = tool({
     path: pathSchema,
   }),
   execute: async ({ path }) => {
-    log("rmdir", path);
-    await pfs.rmdir(path);
-    return { success: true };
+    try {
+      log("rmdir", path);
+      await pfs.rmdir(path);
+      return {
+        success: true,
+        path,
+        message: `Directory '${path}' has been removed successfully`,
+      };
+    } catch (error) {
+      return createErrorResponse("remove directory", path, error);
+    }
   },
 });
 
@@ -97,8 +170,17 @@ const stat = tool({
     path: pathSchema,
   }),
   execute: async ({ path }) => {
-    log("stat", path);
-    return await pfs.stat(path);
+    try {
+      log("stat", path);
+      const stats = await pfs.stat(path);
+      return {
+        success: true,
+        path,
+        stats,
+      };
+    } catch (error) {
+      return createErrorResponse("get file statistics", path, error);
+    }
   },
 });
 
@@ -108,8 +190,17 @@ const lstat = tool({
     path: pathSchema,
   }),
   execute: async ({ path }) => {
-    log("lstat", path);
-    return await pfs.lstat(path);
+    try {
+      log("lstat", path);
+      const stats = await pfs.lstat(path);
+      return {
+        success: true,
+        path,
+        stats,
+      };
+    } catch (error) {
+      return createErrorResponse("get link statistics", path, error);
+    }
   },
 });
 
@@ -120,22 +211,62 @@ const rename = tool({
     newPath: pathSchema.describe("The absolute path of the new file name."),
   }),
   execute: async ({ oldPath, newPath }) => {
-    log("rename", oldPath, newPath);
-    await pfs.rename(oldPath, newPath);
-    return { success: true };
+    try {
+      log("rename", oldPath, newPath);
+      await pfs.rename(oldPath, newPath);
+      return {
+        success: true,
+        oldPath,
+        newPath,
+        message: `Successfully renamed '${oldPath}' to '${newPath}'`,
+      };
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      log(`rename failed from ${oldPath} to ${newPath}:`, errorMessage);
+      return {
+        success: false,
+        error: `Failed to rename '${oldPath}' to '${newPath}': ${errorMessage}`,
+        operation: "rename",
+        oldPath,
+        newPath,
+      };
+    }
   },
 });
 
 const symlink = tool({
   description: "Create a symbolic link.",
   parameters: z.object({
-    target: z.string(),
-    path: pathSchema,
+    target: z
+      .string()
+      .describe("The target path that the symlink should point to"),
+    path: pathSchema.describe(
+      "The absolute path where the symlink should be created",
+    ),
   }),
   execute: async ({ target, path }) => {
-    log("symlink", target, path);
-    await pfs.symlink(target, path);
-    return { success: true };
+    try {
+      log("symlink", target, path);
+      await pfs.symlink(target, path);
+      return {
+        success: true,
+        target,
+        path,
+        message: `Successfully created symlink '${path}' pointing to '${target}'`,
+      };
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      log(`symlink failed from ${target} to ${path}:`, errorMessage);
+      return {
+        success: false,
+        error: `Failed to create symlink '${path}' pointing to '${target}': ${errorMessage}`,
+        operation: "create symlink",
+        target,
+        path,
+      };
+    }
   },
 });
 
@@ -145,8 +276,17 @@ const readlink = tool({
     path: pathSchema,
   }),
   execute: async ({ path }) => {
-    log("readlink", path);
-    return await pfs.readlink(path);
+    try {
+      log("readlink", path);
+      const target = await pfs.readlink(path);
+      return {
+        success: true,
+        path,
+        target,
+      };
+    } catch (error) {
+      return createErrorResponse("read symlink", path, error);
+    }
   },
 });
 

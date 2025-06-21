@@ -10,7 +10,7 @@ import type {
 } from "ai";
 import { lastValueFrom } from "rxjs";
 import { createSignal, For, from, Show } from "solid-js";
-import { config$, messages$, rpcClient } from "../services/rpc";
+import { config$, messages$, isLoading$, rpcClient } from "../services/rpc";
 import {
   AssistantIcon,
   MessagesIcon,
@@ -22,6 +22,7 @@ import {
   UserIcon,
   WarningIcon,
 } from "./Icons";
+import StatusLight from "./StatusLight";
 
 interface ChatInterfaceProps {
   onSettings: () => void;
@@ -30,8 +31,9 @@ interface ChatInterfaceProps {
 export default function ChatInterface(props: ChatInterfaceProps) {
   const config = from(config$);
   const messages = from(messages$);
+  const isLoading = from(isLoading$);
   const [input, setInput] = createSignal("");
-  const [isLoading, setIsLoading] = createSignal(false);
+  const [error, setError] = createSignal<string | null>(null);
 
   const hasApiConfig = () => !!config()?.apiUrl && !!config()?.apiKey;
 
@@ -39,14 +41,13 @@ export default function ChatInterface(props: ChatInterfaceProps) {
     if (!content.trim() || isLoading()) return;
 
     setInput("");
-    setIsLoading(true);
+    setError(null); // Clear any previous error
 
     try {
       await lastValueFrom(rpcClient.call("chat.message", content.trim()));
-    } catch (error) {
-      console.error("Chat error:", error);
-    } finally {
-      setIsLoading(false);
+    } catch (err) {
+      console.error("Chat error:", err);
+      setError(err instanceof Error ? err.message : String(err));
     }
   };
 
@@ -59,7 +60,10 @@ export default function ChatInterface(props: ChatInterfaceProps) {
     <div class="flex flex-col h-full">
       {/* Header */}
       <div class="flex items-center justify-between p-4 border-b">
-        <h2 class="text-xl font-bold">AI Chat</h2>
+        <div class="flex items-center gap-3">
+          <StatusLight isLoading={() => isLoading() || false} />
+          <h2 class="text-xl font-bold">AI Chat</h2>
+        </div>
         <button
           class="btn btn-ghost btn-sm btn-circle"
           onClick={props.onSettings}
@@ -69,7 +73,7 @@ export default function ChatInterface(props: ChatInterfaceProps) {
       </div>
 
       {/* Messages */}
-      <div class="flex-1 overflow-y-auto p-4 space-y-2">
+      <div class="flex-1 overflow-y-auto p-4">
         {!hasApiConfig() ? (
           <div class="text-center py-8">
             <div class="alert alert-warning max-w-md mx-auto">
@@ -151,6 +155,15 @@ export default function ChatInterface(props: ChatInterfaceProps) {
             <SendIcon />
           </button>
         </form>
+        <Show when={error()}>
+          <div class="alert alert-error mt-2">
+            <WarningIcon />
+            <div>
+              <h4 class="font-bold">Error sending message</h4>
+              <div class="text-sm">{error()}</div>
+            </div>
+          </div>
+        </Show>
       </div>
     </div>
   );

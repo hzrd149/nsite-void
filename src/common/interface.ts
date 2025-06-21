@@ -94,6 +94,10 @@ export interface ClientWorkerCommands extends RPCCommandDirectory {
     payload: void;
     result: void;
   };
+  "chat.isLoading": {
+    payload: void;
+    result: boolean;
+  };
 }
 
 // Commands for the worker to send to the client

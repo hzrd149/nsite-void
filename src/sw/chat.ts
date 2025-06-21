@@ -26,9 +26,11 @@ const model$ = config$.pipe(
 );
 
 const messages$ = new BehaviorSubject<CoreMessage[]>([]);
+const isLoading$ = new BehaviorSubject<boolean>(false);
 
 function resetConversation() {
   messages$.next([]);
+  isLoading$.next(false);
 }
 
 async function sendMessage(message: string) {
@@ -38,19 +40,28 @@ async function sendMessage(message: string) {
   log("Sending message", message);
   messages$.next([...messages$.value, { role: "user", content: message }]);
 
-  const result = await generateText({
-    model,
-    system: SYSTEM_PROMPT,
-    tools: fsTools,
-    messages: messages$.value,
-    maxSteps: config.maxSteps,
-  });
+  // Set loading state to true
+  isLoading$.next(true);
 
-  // Add all generated messages (including tool calls/results) to the conversation
-  messages$.next([...messages$.value, ...result.response.messages]);
+  try {
+    const result = await generateText({
+      model,
+      system: SYSTEM_PROMPT,
+      tools: fsTools,
+      messages: messages$.value,
+      maxSteps: config.maxSteps,
+    });
+
+    // Add all generated messages (including tool calls/results) to the conversation
+    messages$.next([...messages$.value, ...result.response.messages]);
+  } finally {
+    // Always set loading state to false when done
+    isLoading$.next(false);
+  }
 }
 
 // RPC methods
 rpcServer.register("chat.message", sendMessage);
 rpcServer.register("chat.messages", () => messages$);
 rpcServer.register("chat.reset", resetConversation);
+rpcServer.register("chat.isLoading", () => isLoading$);

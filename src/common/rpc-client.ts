@@ -1,4 +1,5 @@
 import { filter, finalize, map, Observable, takeWhile, tap } from "rxjs";
+import { nanoid } from "nanoid";
 import type { RPCCommandDirectory, RPCMessage, RPCResponse } from "./interface";
 import { logger } from "./logger";
 
@@ -23,7 +24,7 @@ export class RPCClient<Commands extends RPCCommandDirectory = {}> {
     payload: Commands[C]["payload"],
   ): Observable<Commands[C]["result"]> {
     return new Observable((observer) => {
-      const id = `rpc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const id = nanoid(8);
 
       log("[RPC] Calling command", id, command, payload);
       this.outgoing({

@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "dev": "serve dist",
     "build": "tsc -b && pnpm build:chat && pnpm build:sw",
     "build:chat": "vite build",
     "build:sw": "esbuild src/sw/index.ts --bundle --minify --sourcemap --outfile=dist/sw.js",
@@ -17,6 +18,7 @@
     "debug": "^4.4.1",
     "idb": "^8.0.3",
     "mime": "^4.0.7",
+    "nanoid": "^5.1.5",
     "ollama-ai-provider": "^1.2.0",
     "rxjs": "^7.8.2",
     "solid-js": "^1.9.5",
@@ -29,6 +31,7 @@
     "daisyui": "^5.0.43",
     "esbuild": "^0.25.5",
     "prettier": "^3.5.3",
+    "serve": "^14.2.4",
     "typescript": "~5.8.3",
     "vite": "^6.3.5",
     "vite-plugin-solid": "^2.11.6"

@@ -23,3 +23,6 @@ export const config$ = defer(() => rpcClient.call("getConfig", void 0)).pipe(
 export const messages$ = defer(() =>
   rpcClient.call("chat.messages", void 0),
 ).pipe(shareReplay(1));
+export const isLoading$ = defer(() =>
+  rpcClient.call("chat.isLoading", void 0),
+).pipe(shareReplay(1));

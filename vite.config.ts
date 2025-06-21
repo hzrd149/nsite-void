@@ -10,21 +10,21 @@ export default defineConfig({
     minify: false,
     rollupOptions: {
       input: {
-        chat: "src/chat/index.tsx",
+        void: "src/void/index.tsx",
       },
       output: {
         format: "esm",
         manualChunks: {
-          chat: ["src/chat/index.tsx"],
+          void: ["src/void/index.tsx"],
         },
         inlineDynamicImports: false,
         entryFileNames: (chunkInfo) => {
-          if (chunkInfo.name === "chat") return "chat.js";
+          if (chunkInfo.name === "void") return "void.js";
           return "[name].js";
         },
         assetFileNames: (assetInfo) => {
           if (assetInfo.name && assetInfo.name.endsWith(".css"))
-            return "chat.css";
+            return "void.css";
           return "[name].[ext]";
         },
       },

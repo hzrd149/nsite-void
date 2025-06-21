@@ -1,9 +1,15 @@
 @import "tailwindcss";
+
+/* DaisyUI Configuration */
 @plugin "daisyui" {
   themes:
     light --default,
     dark --prefersdark;
-  root: "#void";
+}
+
+/* Shadow DOM container - override the initial display:none to prevent FOUC */
+:host > div {
+  display: block !important;
 }
 
 /* Status Light Styles */

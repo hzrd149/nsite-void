@@ -6,8 +6,7 @@
     <title>nsite void</title>
 
     <!-- Load the chat interface -->
-    <link rel="stylesheet" href="/chat.css" />
-    <script type="module" src="/chat.js"></script>
+    <script type="module" src="/void.js"></script>
 
     <style>
       html,
@@ -404,7 +403,10 @@
 
     <script>
       function openVoid() {
-        document.querySelector("#void button").click();
+        document
+          .querySelector("#void")
+          .shadowRoot.querySelector("button")
+          .click();
       }
     </script>
   </body>

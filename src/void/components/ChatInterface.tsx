@@ -73,7 +73,7 @@ export default function ChatInterface(props: ChatInterfaceProps) {
       </div>
 
       {/* Messages */}
-      <div class="flex-1 overflow-y-auto p-4">
+      <div class="flex-1 flex flex-col-reverse overflow-y-auto p-4 space-y-3 space-y-reverse">
         {!hasApiConfig() ? (
           <div class="text-center py-8">
             <div class="alert alert-warning max-w-md mx-auto">
@@ -98,37 +98,45 @@ export default function ChatInterface(props: ChatInterfaceProps) {
             </p>
           </div>
         ) : (
-          <For each={messages()}>
-            {(message) => {
-              message.content;
-              switch (message.role) {
-                case "system":
-                  return <ChatSystemMessage message={message} />;
-                case "user":
-                  return <ChatUserMessage message={message} />;
-                case "assistant":
-                  return <ChatAssistantMessage message={message} />;
-                case "tool":
-                  return <ChatToolMessage message={message} />;
-                default:
-                  return null;
-              }
-            }}
-          </For>
-        )}
-
-        {isLoading() && (
-          <div class="chat chat-start">
-            <div class="chat-image avatar">
-              <div class="bg-secondary text-secondary-content w-10 h-10 rounded-full">
-                <AssistantIcon class="size-6 m-2" />
+          <>
+            {isLoading() && (
+              <div class="bg-secondary/10 border border-secondary/20 rounded-lg p-4">
+                <div class="flex items-start gap-3">
+                  <div class="bg-secondary text-secondary-content w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <AssistantIcon class="size-4" />
+                  </div>
+                  <div class="flex-1">
+                    <div class="font-medium text-sm text-secondary mb-1">
+                      AI Assistant
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="loading loading-dots loading-sm"></span>
+                      <span class="text-sm text-base-content/60">
+                        Thinking...
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-            <div class="chat-header">AI Assistant</div>
-            <div class="chat-bubble chat-bubble-secondary">
-              <span class="loading loading-dots loading-sm"></span>
-            </div>
-          </div>
+            )}
+            <For each={messages() ? Array.from(messages()!).reverse() : []}>
+              {(message) => {
+                message.content;
+                switch (message.role) {
+                  case "system":
+                    return <ChatSystemMessage message={message} />;
+                  case "user":
+                    return <ChatUserMessage message={message} />;
+                  case "assistant":
+                    return <ChatAssistantMessage message={message} />;
+                  case "tool":
+                    return <ChatToolMessage message={message} />;
+                  default:
+                    return null;
+                }
+              }}
+            </For>
+          </>
         )}
       </div>
 
@@ -171,12 +179,19 @@ export default function ChatInterface(props: ChatInterfaceProps) {
 
 function ChatSystemMessage({ message }: { message: CoreSystemMessage }) {
   return (
-    <div class="chat chat-end">
-      <div class="chat-header font-semibold text-xs text-base-content/60">
-        <SystemIcon />
-      </div>
-      <div class="chat-bubble whitespace-pre-wrap bg-base-200 text-base-content/70">
-        {message.content}
+    <div class="bg-base-200/50 border border-base-300/50 rounded-lg p-4">
+      <div class="flex items-start gap-3">
+        <div class="bg-base-300 text-base-content w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0">
+          <SystemIcon class="size-4" />
+        </div>
+        <div class="flex-1">
+          <div class="font-medium text-sm text-base-content/70 mb-1">
+            System
+          </div>
+          <div class="text-sm text-base-content/60 whitespace-pre-wrap">
+            {message.content}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -184,78 +199,88 @@ function ChatSystemMessage({ message }: { message: CoreSystemMessage }) {
 
 function ChatUserMessage({ message }: { message: CoreUserMessage }) {
   return (
-    <div class="chat chat-end">
-      <div class="chat-image avatar">
-        <div class="bg-primary text-primary-content w-10 h-10 rounded-full">
-          <UserIcon class="size-6 m-2" />
+    <div class="bg-primary/5 border border-primary/10 rounded-lg p-4">
+      <div class="flex items-start gap-3">
+        <div class="bg-primary text-primary-content w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0">
+          <UserIcon class="size-4" />
+        </div>
+        <div class="flex-1">
+          <div class="font-medium text-sm text-primary mb-2">You</div>
+          {renderUserContent(message.content)}
         </div>
       </div>
-      <div class="chat-header">You</div>
-      {renderUserContent(message.content)}
     </div>
   );
 }
 
 function ChatAssistantMessage({ message }: { message: CoreAssistantMessage }) {
   return (
-    <div class="chat chat-start">
-      <div class="chat-image avatar">
-        <div class="bg-secondary text-secondary-content w-10 h-10 rounded-full">
-          <AssistantIcon class="size-6 m-2" />
+    <div class="bg-secondary/5 border border-secondary/10 rounded-lg p-4">
+      <div class="flex items-start gap-3">
+        <div class="bg-secondary text-secondary-content w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0">
+          <AssistantIcon class="size-4" />
+        </div>
+        <div class="flex-1">
+          <div class="font-medium text-sm text-secondary mb-2">
+            AI Assistant
+          </div>
+          {renderAssistantContent(message.content)}
         </div>
       </div>
-      <div class="chat-header">AI Assistant</div>
-      {renderAssistantContent(message.content)}
     </div>
   );
 }
 
 function ChatToolMessage({ message }: { message: CoreToolMessage }) {
   return (
-    <div class="chat chat-end">
-      {message.content.map((part) => (
-        <div class="chat-bubble">
-          <ExpandablePart
-            icon="tool"
-            label={`Tool Result: ${part.toolName}`}
-            content={
-              <pre class="text-xs whitespace-pre-wrap">
-                {JSON.stringify(part, null, 2)}
-              </pre>
-            }
-            isError={part.isError}
-          />
+    <div class="bg-base-200/30 border border-base-300/30 rounded-lg p-4">
+      <div class="flex items-start gap-3">
+        <div class="bg-base-300 text-base-content w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0">
+          <ToolIcon class="size-4" />
         </div>
-      ))}
+        <div class="flex-1">
+          <div class="font-medium text-sm text-base-content mb-2">
+            Tool Results
+          </div>
+          <div class="space-y-2">
+            {message.content.map((part) => (
+              <ExpandablePart
+                icon="tool"
+                label={`Tool Result: ${part.toolName}`}
+                content={
+                  <pre class="text-xs whitespace-pre-wrap bg-base-100 p-3 rounded border">
+                    {JSON.stringify(part, null, 2)}
+                  </pre>
+                }
+                isError={part.isError}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
 function renderUserContent(content: UserContent) {
   if (typeof content === "string") {
-    return (
-      <div class="flex flex-col gap-2">
-        <div class="chat-bubble chat-bubble-primary whitespace-pre-wrap mb-1">
-          {content}
-        </div>
-      </div>
-    );
+    return <div class="text-base-content whitespace-pre-wrap">{content}</div>;
   }
   // Handle array of TextPart | ImagePart | FilePart
   return (
-    <div class="flex flex-col gap-2">
+    <div class="space-y-3">
       {content.map((part) => {
         switch (part.type) {
           case "text":
             return (
-              <div class="chat-bubble chat-bubble-primary whitespace-pre-wrap mb-1">
+              <div class="text-base-content whitespace-pre-wrap">
                 {(part as TextPart).text}
               </div>
             );
           case "image":
             // Show image inline
             return (
-              <div class="chat-bubble">
+              <div class="bg-base-100 p-3 rounded border">
                 <img
                   src={
                     typeof part.image === "string"
@@ -268,14 +293,10 @@ function renderUserContent(content: UserContent) {
               </div>
             );
           case "file":
-            return (
-              <div class="chat-bubble">
-                <FileCard part={part} />
-              </div>
-            );
+            return <FileCard part={part} />;
           default:
             return (
-              <div class="chat-bubble text-xs text-base-content/50">
+              <div class="text-xs text-base-content/50 bg-base-100 p-2 rounded border">
                 [Unknown part: {JSON.stringify(part)}]
               </div>
             );
@@ -287,33 +308,25 @@ function renderUserContent(content: UserContent) {
 
 function renderAssistantContent(content: AssistantContent) {
   if (typeof content === "string") {
-    return (
-      <div class="chat-bubble chat-bubble-secondary whitespace-pre-wrap">
-        {content}
-      </div>
-    );
+    return <div class="text-base-content whitespace-pre-wrap">{content}</div>;
   }
   // Handle array of TextPart | FilePart | ReasoningPart | RedactedReasoningPart | ToolCallPart
   return (
-    <div class="flex flex-col gap-2 w-full">
+    <div class="space-y-3">
       {content.map((part) => {
         switch (part.type) {
           case "text":
             return (
-              <div class="chat-bubble chat-bubble-secondary whitespace-pre-wrap">
+              <div class="text-base-content whitespace-pre-wrap">
                 {part.text}
               </div>
             );
           case "file":
-            return (
-              <div class="chat-bubble">
-                <FileCard part={part} />
-              </div>
-            );
+            return <FileCard part={part} />;
           case "reasoning":
             return (
               <ExpandablePart
-                className="chat-bubble"
+                className="bg-base-100 p-3 rounded border"
                 icon="thinking"
                 label="Model Reasoning"
                 content={part.text}
@@ -322,7 +335,7 @@ function renderAssistantContent(content: AssistantContent) {
           case "redacted-reasoning":
             return (
               <ExpandablePart
-                className="chat-bubble"
+                className="bg-base-100 p-3 rounded border"
                 icon="thinking"
                 label="Redacted Reasoning"
                 content={part.data}
@@ -331,7 +344,7 @@ function renderAssistantContent(content: AssistantContent) {
           case "tool-call":
             return (
               <ExpandablePart
-                className="chat-bubble"
+                className="bg-base-100 p-3 rounded border"
                 icon="tool"
                 label={`Tool Call: ${part.toolName}`}
                 content={
@@ -343,7 +356,7 @@ function renderAssistantContent(content: AssistantContent) {
             );
           default:
             return (
-              <div class="chat-bubble text-xs text-base-content/50">
+              <div class="text-xs text-base-content/50 bg-base-100 p-2 rounded border">
                 [Unknown part: {JSON.stringify(part)}]
               </div>
             );

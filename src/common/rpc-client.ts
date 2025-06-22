@@ -1,4 +1,13 @@
-import { filter, finalize, map, Observable, takeWhile, tap } from "rxjs";
+import {
+  filter,
+  finalize,
+  fromEvent,
+  map,
+  Observable,
+  takeUntil,
+  takeWhile,
+  tap,
+} from "rxjs";
 import { nanoid } from "nanoid";
 import type { RPCCommandDirectory, RPCMessage, RPCResponse } from "./interface";
 import { logger } from "./logger";
@@ -45,6 +54,7 @@ export class RPCClient<Commands extends RPCCommandDirectory = {}> {
             log("[RPC] Received", r.type, r.id, r.value);
             return r.value;
           }),
+          takeUntil(fromEvent(window, "beforeunload")),
           finalize(() => this.outgoing({ type: "CLOSE", id })),
         )
         .subscribe(observer);

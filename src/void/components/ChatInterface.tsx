@@ -19,6 +19,7 @@ import {
   SystemIcon,
   ThinkingIcon,
   ToolIcon,
+  TrashIcon,
   UserIcon,
   WarningIcon,
 } from "./Icons";
@@ -51,6 +52,17 @@ export default function ChatInterface(props: ChatInterfaceProps) {
     }
   };
 
+  const clearChat = async () => {
+    if (!confirm("Are you sure you want to clear the chat history?")) return;
+
+    try {
+      await lastValueFrom(rpcClient.call("chat.reset", undefined));
+    } catch (err) {
+      console.error("Clear chat error:", err);
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
   const handleSubmit = (e: Event) => {
     e.preventDefault();
     sendMessage(input());
@@ -64,12 +76,23 @@ export default function ChatInterface(props: ChatInterfaceProps) {
           <StatusLight isLoading={() => isLoading() || false} />
           <h2 class="text-xl font-bold">AI Chat</h2>
         </div>
-        <button
-          class="btn btn-ghost btn-sm btn-circle"
-          onClick={props.onSettings}
-        >
-          <SettingsIcon />
-        </button>
+        <div class="flex items-center gap-2">
+          <button
+            class="btn btn-ghost btn-sm btn-circle"
+            onClick={clearChat}
+            disabled={!messages()?.length || isLoading()}
+            title="Clear chat history"
+          >
+            <TrashIcon />
+          </button>
+          <button
+            class="btn btn-ghost btn-sm btn-circle"
+            onClick={props.onSettings}
+            title="Settings"
+          >
+            <SettingsIcon />
+          </button>
+        </div>
       </div>
 
       {/* Messages */}

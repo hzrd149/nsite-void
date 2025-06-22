@@ -1,4 +1,4 @@
-import { filter, fromEvent, share, takeUntil } from "rxjs";
+import { filter, fromEvent, merge, share, Subject, takeUntil } from "rxjs";
 import type {
   ClientWorkerCommands,
   RPCMessage,
@@ -21,24 +21,51 @@ messages.subscribe((message) => {
   if (data.type === "CALL") {
     console.log("[RPC] Received call", data.id, data.command, data.payload);
 
+    // Create a subject to signal client disconnection
+    const clientDisconnect$ = new Subject<void>();
+
     rpcServer
       .call(data.id, data.command, data.payload)
       .pipe(
-        // Close the request when a close message is received
+        // Close the request when either:
+        // 1. A close message is received, OR
+        // 2. The client disconnects (postMessage fails)
         takeUntil(
-          messages.pipe(
-            filter((e) => e.data.id === data.id && e.data.type === "CLOSE"),
+          merge(
+            messages.pipe(
+              filter((e) => e.data.id === data.id && e.data.type === "CLOSE"),
+            ),
+            clientDisconnect$,
           ),
         ),
       )
       .subscribe({
-        next: (response) => message.source?.postMessage(response),
+        next: (response) => {
+          try {
+            message.source?.postMessage(response);
+          } catch (error) {
+            console.warn(
+              "[RPC] Client disconnected, closing subscription:",
+              error,
+            );
+            clientDisconnect$.next();
+            clientDisconnect$.complete();
+          }
+        },
         // Send the complete message when the request is complete
-        complete: () =>
-          message.source?.postMessage({
-            id: data.id,
-            type: "COMPLETE",
-          } satisfies RPCResponseComplete),
+        complete: () => {
+          try {
+            message.source?.postMessage({
+              id: data.id,
+              type: "COMPLETE",
+            } satisfies RPCResponseComplete);
+          } catch (error) {
+            console.warn(
+              "[RPC] Failed to send complete message, client likely disconnected:",
+              error,
+            );
+          }
+        },
       });
   }
 });

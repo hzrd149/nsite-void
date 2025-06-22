@@ -98,6 +98,10 @@ export interface ClientWorkerCommands extends RPCCommandDirectory {
     payload: void;
     result: boolean;
   };
+  "fs.clear": {
+    payload: void;
+    result: void;
+  };
 }
 
 // Commands for the worker to send to the client

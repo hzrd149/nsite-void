@@ -1,10 +1,10 @@
 import { createSignal, Match, Switch } from "solid-js";
 import { Show } from "solid-js";
-import ChatInterface from "./components/ChatInterface";
-import ChatSettings from "./components/ChatSettings";
+import ChatInterface from "./components/Chat";
+import ChatSettings from "./components/Settings";
 import ServiceWorkerStatus from "./components/ServiceWorkerStatus";
 
-export default function Chat() {
+export default function VoidModal() {
   const [isOpen, setIsOpen] = createSignal(false);
   const [currentView, setCurrentView] = createSignal<"chat" | "settings">(
     "chat",

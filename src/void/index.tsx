@@ -1,6 +1,6 @@
 import { render } from "solid-js/web";
 import "./index.css";
-import Chat from "./Chat.tsx";
+import VoidModal from "./modal.tsx";
 
 // Function to detect and set the system theme
 function setSystemTheme(container: HTMLElement) {
@@ -44,4 +44,4 @@ linkElement.href = "/void.css";
 shadowRoot.append(linkElement);
 
 // Render the Chat component inside the shadow DOM
-render(() => <Chat />, shadowContainer);
+render(() => <VoidModal />, shadowContainer);

@@ -43,6 +43,15 @@ export default function ChatSettings(props: ChatSettingsProps) {
     rpcClient.call("resetConfig", void 0).subscribe();
   };
 
+  const handleClearFileSystem = () => {
+    rpcClient.call("fs.clear", void 0).subscribe({
+      complete: () => {
+        // Reload the page after clearing the file system
+        window.location.reload();
+      },
+    });
+  };
+
   return (
     <div class="p-6">
       <div class="flex items-center justify-between mb-6">
@@ -152,6 +161,26 @@ export default function ChatSettings(props: ChatSettingsProps) {
           <button class="btn btn-outline" onClick={handleReset}>
             Reset
           </button>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text font-medium text-warning">Danger Zone</span>
+          </label>
+          <div class="card bg-base-200 p-4">
+            <p class="text-sm text-base-content/70 mb-4">
+              This will permanently delete all local files and changes stored in
+              the browser. This action cannot be undone.
+            </p>
+            <button
+              class="btn btn-error btn-sm w-fit"
+              onClick={handleClearFileSystem}
+            >
+              Clear All Local Changes
+            </button>
+          </div>
         </div>
       </div>
     </div>
